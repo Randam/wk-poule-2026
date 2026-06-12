@@ -1,0 +1,15 @@
+# Dependency directories
+node_modules/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Database file
+data/poule.db
+data/poule.db-journal
+
+# OS files
+.DS_Store
+Thumbs.db
