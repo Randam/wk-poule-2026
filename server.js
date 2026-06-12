@@ -98,7 +98,14 @@ app.post('/api/join', (req, res) => {
     // Check if name already exists
     const existing = db.getParticipantByName(trimmedName);
     if (existing) {
-      return res.status(409).json({ error: 'Deze naam is al in gebruik. Kies een andere naam.' });
+      return res.json({
+        token: existing.session_token,
+        participant: {
+          id: existing.id,
+          name: existing.name,
+          isAdmin: existing.is_admin === 1
+        }
+      });
     }
 
     const token = uuidv4();
