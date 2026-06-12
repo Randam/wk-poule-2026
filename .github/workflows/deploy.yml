@@ -18,7 +18,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
-            cd /opt/wk-poule
+            cd /opt/wk-poule-2026
             git pull
             npm install --production
-            pm2 restart wk-poule || pm2 start server.js --name "wk-poule"
+            pm2 restart wk-poule-2026 || pm2 start server.js --name "wk-poule-2026"
