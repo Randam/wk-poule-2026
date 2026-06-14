@@ -20,8 +20,8 @@ export async function renderMatches() {
     { id: 'group', label: 'Groepsfase' },
     { id: 'round_of_32', label: 'Ronde van 32' },
     { id: 'round_of_16', label: 'Achtste Finale' },
-    { id: 'quarter_final', label: 'Kwartfinale' },
-    { id: 'semi_final', label: 'Halve Finale' },
+    { id: 'quarterfinal', label: 'Kwartfinale' },
+    { id: 'semifinal', label: 'Halve Finale' },
     { id: 'final', label: 'Finale' },
   ];
   
@@ -99,7 +99,12 @@ export async function renderMatches() {
       // Group matches by date
       const grouped = {};
       matches.forEach(m => {
-        const dateKey = new Date(m.match_date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' });
+        const dateKey = new Date(m.match_date).toLocaleDateString('nl-NL', { 
+          weekday: 'long', 
+          day: 'numeric', 
+          month: 'long',
+          timeZone: 'Europe/Amsterdam'
+        });
         if (!grouped[dateKey]) grouped[dateKey] = [];
         grouped[dateKey].push(m);
       });

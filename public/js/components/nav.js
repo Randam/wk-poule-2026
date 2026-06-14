@@ -64,6 +64,7 @@ export function renderNav(activeTab = 'matches', isAdmin = false) {
   const tabs = [
     { id: 'matches',   icon: '⚽', label: 'Wedstrijden' },
     { id: 'standings', icon: '🏆', label: 'Ranglijst' },
+    { id: 'info',      icon: 'ℹ️', label: 'Info' },
   ];
 
   if (isAdmin) {

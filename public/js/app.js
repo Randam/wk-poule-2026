@@ -4,6 +4,7 @@ import { renderLogin } from './views/login.js';
 import { renderMatches, cleanupMatches } from './views/matches.js';
 import { renderStandings, cleanupStandings } from './views/standings.js';
 import { renderAdmin } from './views/admin.js';
+import { renderInfo } from './views/info.js';
 
 const App = {
   currentView: null,
@@ -69,6 +70,9 @@ const App = {
         break;
       case 'standings':
         renderStandings();
+        break;
+      case 'info':
+        renderInfo();
         break;
       case 'admin':
         if (this.participant?.isAdmin) {

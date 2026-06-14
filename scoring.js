@@ -42,6 +42,26 @@ function calculatePoints(predHome, predAway, actualHome, actualAway) {
 }
 
 /**
+ * Get point multiplier for a given stage.
+ * @param {string} stage - Stage key
+ * @returns {number} Multiplier (1-6)
+ */
+function getStageMultiplier(stage) {
+  const multipliers = {
+    'group': 1,
+    'round_of_32': 2,
+    'round_of_16': 3,
+    'quarterfinal': 4,
+    'quarter_final': 4,
+    'semifinal': 5,
+    'semi_final': 5,
+    'third_place': 6,
+    'final': 6
+  };
+  return multipliers[stage] || 1;
+}
+
+/**
  * Recalculate points for ALL predictions on finished matches.
  * @param {object} db - Database module
  */
@@ -62,6 +82,7 @@ function recalculateMatchPoints(db, match) {
   if (match.home_score === null || match.away_score === null) return;
 
   const predictions = db.getPredictionsForMatch(match.id);
+  const multiplier = getStageMultiplier(match.stage);
 
   for (const pred of predictions) {
     const points = calculatePoints(
@@ -70,12 +91,14 @@ function recalculateMatchPoints(db, match) {
       match.home_score,
       match.away_score
     );
-    db.updatePredictionPoints(pred.id, points);
+    db.updatePredictionPoints(pred.id, points * multiplier);
   }
 }
 
 module.exports = {
   calculatePoints,
   recalculateAllPoints,
-  recalculateMatchPoints
+  recalculateMatchPoints,
+  getStageMultiplier
 };
+

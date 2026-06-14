@@ -64,9 +64,11 @@ export function createMatchCard(match, options = {}) {
   });
 
   /* ---- Stage / group label ---- */
-  const stageInfo = match.group_letter
+  const multiplier = getStageMultiplier(match.stage);
+  const multiplierText = multiplier > 1 ? ` (${multiplier}x pt)` : '';
+  const stageInfo = (match.group_letter
     ? `Groep ${match.group_letter}`
-    : (match.description || getStageName(match.stage));
+    : (match.description || getStageName(match.stage))) + multiplierText;
 
   /* ---- Flags ---- */
   const homeFlag = hasTBD
@@ -114,13 +116,11 @@ export function createMatchCard(match, options = {}) {
   let footerHTML = '';
   if (isFinished && match.home_score !== null) {
     const points      = match.pred_points !== null ? match.pred_points : 0;
-    const multiplier  = getStageMultiplier(match.stage);
     const pointsClass = getPointsClass(points, multiplier);
-    const isPerfect   = points === 5 * multiplier;
     footerHTML = `
       <div class="match-card__footer">
         <span class="match-card__result">Uitslag: <strong>${match.home_score} - ${match.away_score}</strong></span>
-        <span class="points-badge ${pointsClass}">${points} pt${isPerfect ? ' ★' : ''}</span>
+        <span class="points-badge ${pointsClass}">${points} pt${points === 5 * multiplier ? ' ★' : ''}</span>
       </div>
     `;
   }
@@ -232,44 +232,37 @@ function getStageName(stage) {
 }
 
 /**
- * Map a stage key to its points multiplier.
- *
- * @param   {string} stage – Stage identifier from the database
- * @returns {number}        Points multiplier
- */
-function getStageMultiplier(stage) {
-  switch (stage) {
-    case 'group':
-      return 1;
-    case 'round_of_32':
-      return 2;
-    case 'round_of_16':
-      return 3;
-    case 'quarterfinal':
-    case 'quarter_final':
-      return 4;
-    case 'semifinal':
-    case 'semi_final':
-      return 5;
-    case 'third_place':
-    case 'final':
-      return 6;
-    default:
-      return 1;
-  }
-}
-
-/**
  * Return a CSS class reflecting the number of points earned.
  * Used to colour-code the points badge.
  *
  * @param   {number} points – Points awarded for a prediction
- * @param   {number} multiplier – Stage points multiplier
+ * @param   {number} multiplier – Stage multiplier
  * @returns {string}         CSS class name
  */
-function getPointsClass(points, multiplier) {
-  if (points >= 5 * multiplier) return 'points-5';
-  if (points >= 3 * multiplier) return 'points-3';
-  if (points >= 1 * multiplier) return 'points-1';
+function getPointsClass(points, multiplier = 1) {
+  const basePoints = points / multiplier;
+  if (basePoints >= 5) return 'points-5';
+  if (basePoints >= 3) return 'points-3';
+  if (basePoints >= 1) return 'points-1';
   return 'points-0';
+}
+
+/**
+ * Get point multiplier for a given stage.
+ * @param   {string} stage – Stage identifier from database
+ * @returns {number}        Multiplier factor
+ */
+function getStageMultiplier(stage) {
+  const multipliers = {
+    'group': 1,
+    'round_of_32': 2,
+    'round_of_16': 3,
+    'quarterfinal': 4,
+    'quarter_final': 4,
+    'semifinal': 5,
+    'semi_final': 5,
+    'third_place': 6,
+    'final': 6
+  };
+  return multipliers[stage] || 1;
 }

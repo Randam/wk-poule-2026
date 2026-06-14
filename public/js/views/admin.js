@@ -26,8 +26,8 @@ export async function renderAdmin() {
     { id: 'group', label: 'Groepsfase' },
     { id: 'round_of_32', label: 'Ronde van 32' },
     { id: 'round_of_16', label: 'Achtste Finale' },
-    { id: 'quarter_final', label: 'Kwartfinale' },
-    { id: 'semi_final', label: 'Halve Finale' },
+    { id: 'quarterfinal', label: 'Kwartfinale' },
+    { id: 'semifinal', label: 'Halve Finale' },
     { id: 'final', label: 'Finale' },
   ];
   

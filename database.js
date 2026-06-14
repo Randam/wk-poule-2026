@@ -288,7 +288,27 @@ function updatePredictionPoints(predictionId, points) {
 // ==========================================
 
 function getStandings() {
-  return queryAll("\n    SELECT\n      p.name,\n      COALESCE(SUM(pr.points_earned), 0) AS totalPoints,\n      COUNT(pr.id) AS matchesPredicted,\n      COALESCE(SUM(CASE WHEN pr.points_earned = 5 THEN 1 ELSE 0 END), 0) AS perfectScores\n    FROM participants p\n    LEFT JOIN predictions pr ON p.id = pr.participant_id\n    WHERE p.is_admin = 0\n    GROUP BY p.id, p.name\n    ORDER BY totalPoints DESC, perfectScores DESC, p.name ASC\n  ");
+  return queryAll(`
+    SELECT
+      p.name,
+      COALESCE(SUM(pr.points_earned), 0) AS totalPoints,
+      COUNT(pr.id) AS matchesPredicted,
+      COALESCE(SUM(CASE 
+        WHEN m.stage = 'group' AND pr.points_earned = 5 THEN 1
+        WHEN m.stage = 'round_of_32' AND pr.points_earned = 10 THEN 1
+        WHEN m.stage = 'round_of_16' AND pr.points_earned = 15 THEN 1
+        WHEN m.stage IN ('quarterfinal', 'quarter_final') AND pr.points_earned = 20 THEN 1
+        WHEN m.stage IN ('semifinal', 'semi_final') AND pr.points_earned = 25 THEN 1
+        WHEN m.stage IN ('third_place', 'final') AND pr.points_earned = 30 THEN 1
+        ELSE 0 
+      END), 0) AS perfectScores
+    FROM participants p
+    LEFT JOIN predictions pr ON p.id = pr.participant_id
+    LEFT JOIN matches m ON pr.match_id = m.id
+    WHERE p.is_admin = 0
+    GROUP BY p.id, p.name
+    ORDER BY totalPoints DESC, perfectScores DESC, p.name ASC
+  `);
 }
 
 // ==========================================
