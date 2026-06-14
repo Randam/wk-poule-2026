@@ -206,6 +206,10 @@ function updateMatchStatus(matchId, status) {
   runSql('UPDATE matches SET status = ? WHERE id = ?', [status, matchId]);
 }
 
+function updateMatchDate(matchId, matchDate) {
+  runSql('UPDATE matches SET match_date = ? WHERE id = ?', [matchDate, matchId]);
+}
+
 // ==========================================
 // Participant queries
 // ==========================================
@@ -334,6 +338,7 @@ module.exports = {
   updateMatchResult: updateMatchResult,
   updateMatchTeams: updateMatchTeams,
   updateMatchStatus: updateMatchStatus,
+  updateMatchDate: updateMatchDate,
   addParticipant: addParticipant,
   getParticipantByToken: getParticipantByToken,
   getParticipantByName: getParticipantByName,
