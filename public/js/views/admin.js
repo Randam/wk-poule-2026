@@ -116,6 +116,9 @@ export async function renderAdmin() {
         return;
       }
       
+      // Sort matches chronologically
+      matches.sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+      
       list.innerHTML = '';
       const container = document.createElement('div');
       container.style.padding = '0 16px';

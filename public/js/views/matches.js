@@ -90,6 +90,9 @@ export async function renderMatches() {
         return;
       }
       
+      // Sort matches chronologically
+      matches.sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+      
       // Update stats
       const predicted = matches.filter(m => m.pred_home_score !== null).length;
       document.getElementById('stats-bar').innerHTML = `
@@ -137,10 +140,17 @@ export async function renderMatches() {
         list.appendChild(cardsContainer);
       }
       
-      // Scroll to first unpredicted match
-      const firstUnpredicted = list.querySelector('.match-card:not(.saved):not(.locked)');
-      if (firstUnpredicted) {
-        setTimeout(() => firstUnpredicted.scrollIntoView({ behavior: 'smooth', block: 'center' }), 500);
+      // Scroll to first upcoming (not finished) match or the last played match
+      let targetMatch = matches.find(m => m.status !== 'finished');
+      if (!targetMatch && matches.length > 0) {
+        targetMatch = matches[matches.length - 1];
+      }
+      
+      if (targetMatch) {
+        const targetEl = list.querySelector(`.match-card[data-match-id="${targetMatch.id}"]`);
+        if (targetEl) {
+          setTimeout(() => targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 500);
+        }
       }
       
     } catch (err) {
