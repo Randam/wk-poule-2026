@@ -99,7 +99,7 @@ export async function renderMatches() {
       // Group matches by date
       const grouped = {};
       matches.forEach(m => {
-        const dateKey = new Date(m.match_date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+        const dateKey = new Date(m.match_date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' });
         if (!grouped[dateKey]) grouped[dateKey] = [];
         grouped[dateKey].push(m);
       });

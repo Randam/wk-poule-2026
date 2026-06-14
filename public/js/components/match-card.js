@@ -55,10 +55,12 @@ export function createMatchCard(match, options = {}) {
     weekday: 'short',
     day:     'numeric',
     month:   'short',
+    timeZone: 'Europe/Amsterdam'
   });
   const timeStr = matchDate.toLocaleTimeString('nl-NL', {
     hour:   '2-digit',
     minute: '2-digit',
+    timeZone: 'Europe/Amsterdam'
   });
 
   /* ---- Stage / group label ---- */
@@ -112,11 +114,13 @@ export function createMatchCard(match, options = {}) {
   let footerHTML = '';
   if (isFinished && match.home_score !== null) {
     const points      = match.pred_points !== null ? match.pred_points : 0;
-    const pointsClass = getPointsClass(points);
+    const multiplier  = getStageMultiplier(match.stage);
+    const pointsClass = getPointsClass(points, multiplier);
+    const isPerfect   = points === 5 * multiplier;
     footerHTML = `
       <div class="match-card__footer">
         <span class="match-card__result">Uitslag: <strong>${match.home_score} - ${match.away_score}</strong></span>
-        <span class="points-badge ${pointsClass}">${points} pt${points === 5 ? ' ★' : ''}</span>
+        <span class="points-badge ${pointsClass}">${points} pt${isPerfect ? ' ★' : ''}</span>
       </div>
     `;
   }
@@ -228,15 +232,44 @@ function getStageName(stage) {
 }
 
 /**
+ * Map a stage key to its points multiplier.
+ *
+ * @param   {string} stage – Stage identifier from the database
+ * @returns {number}        Points multiplier
+ */
+function getStageMultiplier(stage) {
+  switch (stage) {
+    case 'group':
+      return 1;
+    case 'round_of_32':
+      return 2;
+    case 'round_of_16':
+      return 3;
+    case 'quarterfinal':
+    case 'quarter_final':
+      return 4;
+    case 'semifinal':
+    case 'semi_final':
+      return 5;
+    case 'third_place':
+    case 'final':
+      return 6;
+    default:
+      return 1;
+  }
+}
+
+/**
  * Return a CSS class reflecting the number of points earned.
  * Used to colour-code the points badge.
  *
  * @param   {number} points – Points awarded for a prediction
+ * @param   {number} multiplier – Stage points multiplier
  * @returns {string}         CSS class name
  */
-function getPointsClass(points) {
-  if (points >= 5) return 'points-5';
-  if (points >= 3) return 'points-3';
-  if (points >= 1) return 'points-1';
+function getPointsClass(points, multiplier) {
+  if (points >= 5 * multiplier) return 'points-5';
+  if (points >= 3 * multiplier) return 'points-3';
+  if (points >= 1 * multiplier) return 'points-1';
   return 'points-0';
 }

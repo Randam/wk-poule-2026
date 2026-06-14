@@ -126,8 +126,8 @@ export async function renderAdmin() {
         if (match.status === 'finished') card.classList.add('finished');
         
         const matchDate = new Date(match.match_date);
-        const dateStr = matchDate.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
-        const timeStr = matchDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = matchDate.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Amsterdam' });
+        const timeStr = matchDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
         const stageInfo = match.group_letter ? `Groep ${match.group_letter}` : (match.description || '');
         
         const isKnockout = match.stage !== 'group';
