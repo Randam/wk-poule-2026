@@ -13,19 +13,64 @@ const STAGE_MAP = {
 };
 
 const TEAM_NAME_MAP = {
-  'Mexico': 'MEX', 'South Africa': 'RSA', 'Korea Republic': 'KOR', 'South Korea': 'KOR',
-  'Czech Republic': 'CZE', 'Czechia': 'CZE', 'Canada': 'CAN', 'Bosnia-Herzegovina': 'BIH',
-  'Bosnia and Herzegovina': 'BIH', 'Qatar': 'QAT', 'Switzerland': 'SUI', 'Brazil': 'BRA',
-  'Morocco': 'MAR', 'Haiti': 'HAI', 'Scotland': 'SCO', 'United States': 'USA', 'USA': 'USA',
-  'Paraguay': 'PAR', 'Australia': 'AUS', 'Turkey': 'TUR', 'Türkiye': 'TUR', 'Germany': 'GER',
-  'Curaçao': 'CUW', 'Curacao': 'CUW', 'Côte d\'Ivoire': 'CIV', 'Ivory Coast': 'CIV',
-  'Ecuador': 'ECU', 'Netherlands': 'NED', 'Japan': 'JPN', 'Sweden': 'SWE', 'Tunisia': 'TUN',
-  'Belgium': 'BEL', 'Egypt': 'EGY', 'Iran': 'IRN', 'New Zealand': 'NZL', 'Spain': 'ESP',
-  'Cape Verde': 'CPV', 'Cabo Verde': 'CPV', 'Saudi Arabia': 'KSA', 'Uruguay': 'URU',
-  'France': 'FRA', 'Senegal': 'SEN', 'Iraq': 'IRQ', 'Norway': 'NOR', 'Argentina': 'ARG',
-  'Algeria': 'ALG', 'Austria': 'AUT', 'Jordan': 'JOR', 'Portugal': 'POR', 'DR Congo': 'COD',
-  'Congo DR': 'COD', 'Uzbekistan': 'UZB', 'Colombia': 'COL', 'England': 'ENG', 'Croatia': 'CRO',
-  'Ghana': 'GHA', 'Panama': 'PAN'
+  'Mexico': 'MEX',
+  'South Africa': 'RSA',
+  'Korea Republic': 'KOR',
+  'South Korea': 'KOR',
+  'Czech Republic': 'CZE',
+  'Czechia': 'CZE',
+  'Canada': 'CAN',
+  'Bosnia-Herzegovina': 'BIH',
+  'Bosnia and Herzegovina': 'BIH',
+  'Qatar': 'QAT',
+  'Switzerland': 'SUI',
+  'Brazil': 'BRA',
+  'Morocco': 'MAR',
+  'Haiti': 'HAI',
+  'Scotland': 'SCO',
+  'United States': 'USA',
+  'USA': 'USA',
+  'Paraguay': 'PAR',
+  'Australia': 'AUS',
+  'Turkey': 'TUR',
+  'Türkiye': 'TUR',
+  'Germany': 'GER',
+  'Curaçao': 'CUW',
+  'Curacao': 'CUW',
+  'Côte d\'Ivoire': 'CIV',
+  'Ivory Coast': 'CIV',
+  'Ecuador': 'ECU',
+  'Netherlands': 'NED',
+  'Japan': 'JPN',
+  'Sweden': 'SWE',
+  'Tunisia': 'TUN',
+  'Belgium': 'BEL',
+  'Egypt': 'EGY',
+  'Iran': 'IRN',
+  'New Zealand': 'NZL',
+  'Spain': 'ESP',
+  'Cape Verde': 'CPV',
+  'Cabo Verde': 'CPV',
+  'Cape Verde Islands': 'CPV',
+  'Saudi Arabia': 'KSA',
+  'Uruguay': 'URU',
+  'France': 'FRA',
+  'Senegal': 'SEN',
+  'Iraq': 'IRQ',
+  'Norway': 'NOR',
+  'Argentina': 'ARG',
+  'Algeria': 'ALG',
+  'Austria': 'AUT',
+  'Jordan': 'JOR',
+  'Portugal': 'POR',
+  'DR Congo': 'COD',
+  'Congo DR': 'COD',
+  'Uzbekistan': 'UZB',
+  'Colombia': 'COL',
+  'England': 'ENG',
+  'Croatia': 'CRO',
+  'Ghana': 'GHA',
+  'Panama': 'PAN',
 };
 
 async function run() {
@@ -75,6 +120,7 @@ async function run() {
     if (matched) {
       const newDate = apiMatch.utcDate; // Format: 2026-06-11T19:00:00Z
       if (matched.match_date !== newDate) {
+        console.log(`Updating Match #${matched.match_number} (${matched.home_team_name_nl} vs ${matched.away_team_name_nl}) date from ${matched.match_date} to ${newDate}`);
         db.updateMatchDate(matched.id, newDate);
         updatedCount++;
       }
@@ -82,6 +128,10 @@ async function run() {
   }
 
   console.log(`Successfully updated kickoff dates for ${updatedCount} matches!`);
+  process.exit(0);
 }
 
-run().catch(console.error);
+run().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

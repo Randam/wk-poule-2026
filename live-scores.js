@@ -53,6 +53,7 @@ const TEAM_NAME_MAP = {
   'Spain': 'ESP',
   'Cape Verde': 'CPV',
   'Cabo Verde': 'CPV',
+  'Cape Verde Islands': 'CPV',
   'Saudi Arabia': 'KSA',
   'Uruguay': 'URU',
   'France': 'FRA',
