@@ -157,7 +157,57 @@ export async function renderMatches() {
       list.innerHTML = `<div class="loading-container"><p>Fout bij laden: ${err.message}</p></div>`;
     }
   }
-  
+
+  // --- Auto-detect the active stage ---
+  // Fetch all matches at once to find the first stage with unfinished matches.
+  // Falls back to the last stage that has any matches (e.g. group, if knockout not started).
+  async function detectActiveStage() {
+    try {
+      const data = await API.getMatches({});
+      const allMatches = data.matches || [];
+
+      // Build a map: stageId -> { total, finished }
+      const stageStats = {};
+      for (const s of stages) {
+        stageStats[s.id] = { total: 0, finished: 0 };
+      }
+      for (const m of allMatches) {
+        if (stageStats[m.stage]) {
+          stageStats[m.stage].total++;
+          if (m.status === 'finished') stageStats[m.stage].finished++;
+        }
+      }
+
+      // Find the first stage (in order) that has matches but is not fully finished
+      let active = null;
+      for (const s of stages) {
+        const stat = stageStats[s.id];
+        if (stat.total > 0 && stat.finished < stat.total) {
+          active = s.id;
+          break;
+        }
+      }
+
+      // If all stages are finished (or only group stage has matches and is done),
+      // fall back to the last stage that has any matches
+      if (!active) {
+        for (let i = stages.length - 1; i >= 0; i--) {
+          if (stageStats[stages[i].id].total > 0) {
+            active = stages[i].id;
+            break;
+          }
+        }
+      }
+
+      return active || 'group';
+    } catch (e) {
+      return 'group';
+    }
+  }
+
+  // Detect active stage before first render
+  currentStage = await detectActiveStage();
+
   renderStageTabs();
   renderGroupTabs();
   await loadMatches();
