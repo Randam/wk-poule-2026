@@ -219,10 +219,31 @@ function processApiMatch(db, apiMatch) {
 
   if (!ourMatch) return false;
 
-  // Get the final score (full time or after penalties)
+  // Get the score after regular time + extra time, but EXCLUDING penalties.
+  // The API populates `regularTime` + `extraTime` separately when a match
+  // goes to extra time / penalties. `fullTime` in that case includes the
+  // penalty shootout result, which we do NOT want.
+  //
+  // Score logic:
+  //   - No extra time: fullTime = final score (regularTime may be undefined)
+  //   - Extra time (+ optional penalties): regularTime + extraTime = correct score
   const score = apiMatch.score;
-  const homeScore = score?.fullTime?.home ?? score?.regularTime?.home;
-  const awayScore = score?.fullTime?.away ?? score?.regularTime?.away;
+
+  let homeScore, awayScore;
+
+  if (score?.regularTime?.home != null && score?.extraTime?.home != null) {
+    // Match went to extra time: add regular + extra time goals (penalties excluded)
+    homeScore = score.regularTime.home + score.extraTime.home;
+    awayScore = score.regularTime.away + score.extraTime.away;
+  } else if (score?.regularTime?.home != null) {
+    // Extra time data not present yet, use regularTime
+    homeScore = score.regularTime.home;
+    awayScore = score.regularTime.away;
+  } else {
+    // Normal match (no extra time): fullTime is the correct final score
+    homeScore = score?.fullTime?.home;
+    awayScore = score?.fullTime?.away;
+  }
 
   if (homeScore === null || homeScore === undefined ||
       awayScore === null || awayScore === undefined) {
