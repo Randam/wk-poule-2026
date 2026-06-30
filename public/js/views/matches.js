@@ -159,51 +159,35 @@ export async function renderMatches() {
   }
 
   // --- Auto-detect the active stage ---
-  // Fetch all matches at once to find the first stage with unfinished matches.
-  // Falls back to the last stage that has any matches (e.g. group, if knockout not started).
+  // Uses kick-off dates rather than match status, so it works correctly even
+  // when the live-score updater hasn't processed all results yet.
+  //
+  // Logic:
+  //   1. Find the first match (chronologically) whose kick-off is still in
+  //      the future → that is the active stage.
+  //   2. If every match is already in the past, use the stage of the most
+  //      recently played match (so we land on the last active stage).
   async function detectActiveStage() {
     try {
       const data = await API.getMatches({});
-      const allMatches = data.matches || [];
+      const allMatches = (data.matches || [])
+        .sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
 
-      // Build a map: stageId -> { total, finished }
-      const stageStats = {};
-      for (const s of stages) {
-        stageStats[s.id] = { total: 0, finished: 0 };
-      }
-      for (const m of allMatches) {
-        if (stageStats[m.stage]) {
-          stageStats[m.stage].total++;
-          if (m.status === 'finished') stageStats[m.stage].finished++;
-        }
-      }
+      if (allMatches.length === 0) return 'group';
 
-      // Find the first stage (in order) that has matches but is not fully finished
-      let active = null;
-      for (const s of stages) {
-        const stat = stageStats[s.id];
-        if (stat.total > 0 && stat.finished < stat.total) {
-          active = s.id;
-          break;
-        }
-      }
+      const now = new Date();
 
-      // If all stages are finished (or only group stage has matches and is done),
-      // fall back to the last stage that has any matches
-      if (!active) {
-        for (let i = stages.length - 1; i >= 0; i--) {
-          if (stageStats[stages[i].id].total > 0) {
-            active = stages[i].id;
-            break;
-          }
-        }
-      }
+      // First match whose kick-off hasn't happened yet
+      const nextMatch = allMatches.find(m => new Date(m.match_date) > now);
+      if (nextMatch) return nextMatch.stage;
 
-      return active || 'group';
+      // All matches are in the past → land on the last stage that has matches
+      return allMatches[allMatches.length - 1].stage;
     } catch (e) {
       return 'group';
     }
   }
+
 
   // Detect active stage before first render
   currentStage = await detectActiveStage();
