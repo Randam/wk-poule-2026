@@ -75,6 +75,14 @@ export async function renderAdmin() {
       <h2 class="admin-section-title">🔄 Herbereken Punten</h2>
       <button class="btn-primary" id="btn-recalculate" style="width:100%">Punten Herberekenen</button>
     </div>
+
+    <div class="admin-section" style="padding: 0 16px 24px">
+      <h2 class="admin-section-title">💾 Database Backup</h2>
+      <p style="color:var(--text-muted,#888);font-size:0.875rem;margin-bottom:12px">
+        Download een volledige backup van de SQLite-database inclusief alle wedstrijden, voorspellingen en standen.
+      </p>
+      <button class="btn-outline" id="btn-download-db" style="width:100%">⬇️ Database Downloaden</button>
+    </div>
   `;
   
   // Stage tabs
@@ -300,6 +308,38 @@ export async function renderAdmin() {
     } finally {
       btn.disabled = false;
       btn.textContent = 'Punten Herberekenen';
+    }
+  });
+
+  // Download database button
+  document.getElementById('btn-download-db').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-download-db');
+    btn.disabled = true;
+    btn.textContent = 'Bezig met downloaden...';
+    try {
+      const res = await fetch('/api/admin/download-db', {
+        headers: { 'Authorization': `Bearer ${API.token}` }
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Download mislukt');
+      }
+      const blob = await res.blob();
+      const date = new Date().toISOString().slice(0, 10);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `poule-backup-${date}.db`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.__showToast) window.__showToast('Database gedownload!', 'success');
+    } catch (err) {
+      if (window.__showToast) window.__showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⬇️ Database Downloaden';
     }
   });
   

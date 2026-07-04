@@ -755,6 +755,29 @@ app.get('/api/teams', (req, res) => {
 });
 
 // ==========================================
+// DATABASE DOWNLOAD
+// ==========================================
+
+/**
+ * GET /api/admin/download-db
+ * Stream the SQLite database file as a download (admin only).
+ */
+app.get('/api/admin/download-db', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    // Persist latest in-memory state to disk before sending
+    db.persist();
+
+    const fileName = `poule-backup-${new Date().toISOString().slice(0, 10)}.db`;
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.sendFile(db.dbPath, { root: '/' });
+  } catch (error) {
+    console.error('Error in GET /api/admin/download-db:', error);
+    res.status(500).json({ error: 'Er is een fout opgetreden bij het downloaden van de database.' });
+  }
+});
+
+// ==========================================
 // SPA CATCH-ALL
 // ==========================================
 

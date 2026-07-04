@@ -331,6 +331,8 @@ function isMatchLocked(matchId) {
 
 module.exports = {
   initDb: initDb,
+  dbPath: dbPath,
+  persist: persist,
   getTeamByCode: getTeamByCode,
   getAllTeams: getAllTeams,
   getAllMatches: getAllMatches,
