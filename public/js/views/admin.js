@@ -53,6 +53,25 @@ export async function renderAdmin() {
     </div>
 
     <div class="admin-section" style="padding: 0 16px 24px">
+      <h2 class="admin-section-title">📡 Wedstrijden Ophalen</h2>
+      <p style="color:var(--text-muted,#888);font-size:0.875rem;margin-bottom:12px">
+        Haal de deelnemende teams voor de volgende knockoutronde op via football-data.org en sla ze op.
+      </p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select class="admin-select" id="select-fetch-stage" style="flex:1;min-width:180px">
+          <option value="round_of_32">Ronde van 32</option>
+          <option value="round_of_16" selected>Achtste Finale</option>
+          <option value="quarterfinal">Kwartfinale</option>
+          <option value="semifinal">Halve Finale</option>
+          <option value="third_place">Troostfinale</option>
+          <option value="final">Finale</option>
+        </select>
+        <button class="btn-primary" id="btn-fetch-round" style="flex:0 0 auto">🔄 Teams Ophalen</button>
+      </div>
+      <div id="fetch-round-result" style="margin-top:10px;font-size:0.875rem"></div>
+    </div>
+
+    <div class="admin-section" style="padding: 0 16px 24px">
       <h2 class="admin-section-title">🔄 Herbereken Punten</h2>
       <button class="btn-primary" id="btn-recalculate" style="width:100%">Punten Herberekenen</button>
     </div>
@@ -241,6 +260,33 @@ export async function renderAdmin() {
     }
   }
   
+  // Fetch next round button
+  document.getElementById('btn-fetch-round').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-fetch-round');
+    const resultDiv = document.getElementById('fetch-round-result');
+    const stage = document.getElementById('select-fetch-stage').value;
+    btn.disabled = true;
+    btn.textContent = 'Bezig met ophalen...';
+    resultDiv.innerHTML = '';
+    try {
+      const result = await API.fetchNextRound(stage);
+      const color = result.updated > 0 ? 'var(--success, #22c55e)' : 'var(--text-muted, #888)';
+      resultDiv.innerHTML = `<span style="color:${color}">✅ ${result.message}</span>`;
+      if (result.errors && result.errors.length > 0) {
+        resultDiv.innerHTML += `<br><span style="color:var(--danger,#ef4444);font-size:0.8rem">${result.errors.join(', ')}</span>`;
+      }
+      if (window.__showToast) window.__showToast(result.message, result.updated > 0 ? 'success' : 'info');
+      // Reload matches if the current stage is the one we just fetched
+      if (currentStage === stage) loadAdminMatches();
+    } catch (err) {
+      resultDiv.innerHTML = `<span style="color:var(--danger,#ef4444)">❌ ${err.message}</span>`;
+      if (window.__showToast) window.__showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔄 Teams Ophalen';
+    }
+  });
+
   // Recalculate button
   document.getElementById('btn-recalculate').addEventListener('click', async () => {
     const btn = document.getElementById('btn-recalculate');

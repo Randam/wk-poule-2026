@@ -573,6 +573,156 @@ app.put('/api/admin/predictions/:participantId/:matchId', authMiddleware, adminM
 });
 
 /**
+ * POST /api/admin/fetch-next-round
+ * Fetch knockout match teams from football-data.org for a given stage
+ * and update the database. Matches are paired by kick-off time.
+ */
+app.post('/api/admin/fetch-next-round', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { stage } = req.body;
+
+    if (!stage) {
+      return res.status(400).json({ error: 'stage is verplicht.' });
+    }
+
+    const validStages = ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final'];
+    if (!validStages.includes(stage)) {
+      return res.status(400).json({ error: 'Ongeldige stage.' });
+    }
+
+    const apiKey = process.env.FOOTBALL_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({ error: 'Geen FOOTBALL_API_KEY geconfigureerd. Voeg de API-sleutel toe aan .env.' });
+    }
+
+    // Map our stage names to football-data.org round names
+    const STAGE_MAP = {
+      'round_of_32': 'LAST_32',
+      'round_of_16': 'LAST_16',
+      'quarterfinal': 'QUARTER_FINALS',
+      'semifinal': 'SEMI_FINALS',
+      'third_place': 'THIRD_PLACE',
+      'final': 'FINAL',
+    };
+
+    // Team name → our code mapping (reuse from live-scores.js logic)
+    const TEAM_NAME_MAP = {
+      'Mexico': 'MEX', 'South Africa': 'RSA', 'Korea Republic': 'KOR', 'South Korea': 'KOR',
+      'Czech Republic': 'CZE', 'Czechia': 'CZE', 'Canada': 'CAN',
+      'Bosnia-Herzegovina': 'BIH', 'Bosnia and Herzegovina': 'BIH', 'Qatar': 'QAT',
+      'Switzerland': 'SUI', 'Brazil': 'BRA', 'Morocco': 'MAR', 'Haiti': 'HAI',
+      'Scotland': 'SCO', 'United States': 'USA', 'USA': 'USA', 'Paraguay': 'PAR',
+      'Australia': 'AUS', 'Turkey': 'TUR', 'Türkiye': 'TUR', 'Germany': 'GER',
+      'Curaçao': 'CUW', 'Curacao': 'CUW', "Côte d'Ivoire": 'CIV', 'Ivory Coast': 'CIV',
+      'Ecuador': 'ECU', 'Netherlands': 'NED', 'Japan': 'JPN', 'Sweden': 'SWE',
+      'Tunisia': 'TUN', 'Belgium': 'BEL', 'Egypt': 'EGY', 'Iran': 'IRN',
+      'New Zealand': 'NZL', 'Spain': 'ESP', 'Cape Verde': 'CPV', 'Cabo Verde': 'CPV',
+      'Cape Verde Islands': 'CPV', 'Saudi Arabia': 'KSA', 'Uruguay': 'URU',
+      'France': 'FRA', 'Senegal': 'SEN', 'Iraq': 'IRQ', 'Norway': 'NOR',
+      'Argentina': 'ARG', 'Algeria': 'ALG', 'Austria': 'AUT', 'Jordan': 'JOR',
+      'Portugal': 'POR', 'DR Congo': 'COD', 'Congo DR': 'COD', 'Uzbekistan': 'UZB',
+      'Colombia': 'COL', 'England': 'ENG', 'Croatia': 'CRO', 'Ghana': 'GHA',
+      'Panama': 'PAN',
+    };
+
+    const apiRound = STAGE_MAP[stage];
+    const apiUrl = `https://api.football-data.org/v4/competitions/WC/matches?stage=${apiRound}`;
+
+    console.log(`[fetch-next-round] Fetching ${apiRound} from football-data.org...`);
+
+    const response = await fetch(apiUrl, {
+      headers: { 'X-Auth-Token': apiKey }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[fetch-next-round] API error ${response.status}: ${errorText}`);
+      return res.status(502).json({ error: `football-data.org API fout ${response.status}: ${errorText}` });
+    }
+
+    const data = await response.json();
+    const apiMatches = data.matches || [];
+
+    if (apiMatches.length === 0) {
+      return res.json({ updated: 0, message: 'Geen wedstrijden gevonden bij de API voor deze ronde.' });
+    }
+
+    // Get our matches for this stage that still have no teams assigned
+    const ourMatches = db.getAllMatches(stage);
+    const matchesNeedingTeams = ourMatches.filter(m => !m.home_team_id || !m.away_team_id);
+
+    let updated = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (const apiMatch of apiMatches) {
+      const homeTeamName = apiMatch.homeTeam?.name || apiMatch.homeTeam?.shortName;
+      const awayTeamName = apiMatch.awayTeam?.name || apiMatch.awayTeam?.shortName;
+
+      // Skip matches where teams are not yet known (TBD)
+      if (!homeTeamName || !awayTeamName || homeTeamName === 'TBD' || awayTeamName === 'TBD') {
+        skipped++;
+        continue;
+      }
+
+      const homeCode = TEAM_NAME_MAP[homeTeamName];
+      const awayCode = TEAM_NAME_MAP[awayTeamName];
+
+      if (!homeCode) {
+        errors.push(`Onbekend team: ${homeTeamName}`);
+        continue;
+      }
+      if (!awayCode) {
+        errors.push(`Onbekend team: ${awayTeamName}`);
+        continue;
+      }
+
+      // Match by UTC date (compare date portion, ±30 min tolerance)
+      const apiDate = new Date(apiMatch.utcDate);
+
+      const ourMatch = matchesNeedingTeams.find(m => {
+        const ourDate = new Date(m.match_date);
+        return Math.abs(ourDate.getTime() - apiDate.getTime()) < 30 * 60 * 1000;
+      });
+
+      if (!ourMatch) {
+        // Try to find among all matches for this stage (might already have teams)
+        const existing = ourMatches.find(m => {
+          const ourDate = new Date(m.match_date);
+          return Math.abs(ourDate.getTime() - apiDate.getTime()) < 30 * 60 * 1000;
+        });
+        if (existing) {
+          skipped++; // Already has teams assigned
+        } else {
+          errors.push(`Geen overeenkomst gevonden voor ${homeTeamName} vs ${awayTeamName} op ${apiDate.toISOString()}`);
+        }
+        continue;
+      }
+
+      const homeTeam = db.getTeamByCode(homeCode);
+      const awayTeam = db.getTeamByCode(awayCode);
+
+      if (!homeTeam) { errors.push(`Team niet gevonden: ${homeCode}`); continue; }
+      if (!awayTeam) { errors.push(`Team niet gevonden: ${awayCode}`); continue; }
+
+      db.updateMatchTeams(ourMatch.id, homeTeam.id, awayTeam.id);
+      console.log(`[fetch-next-round] Bijgewerkt: ${homeCode} vs ${awayCode} (wedstrijd #${ourMatch.match_number})`);
+      updated++;
+    }
+
+    res.json({
+      updated,
+      skipped,
+      errors: errors.length > 0 ? errors : undefined,
+      message: `${updated} wedstrijd(en) bijgewerkt, ${skipped} overgeslagen.`
+    });
+  } catch (error) {
+    console.error('Error in POST /api/admin/fetch-next-round:', error);
+    res.status(500).json({ error: 'Er is een fout opgetreden.' });
+  }
+});
+
+/**
  * GET /api/admin/participants
  * List all participants.
  */

@@ -197,6 +197,17 @@ const API = {
    */
   async recalculate() {
     return this.request('POST', '/admin/recalculate');
+  },
+
+  /**
+   * Fetch knockout match teams from football-data.org for the given stage
+   * and update the database (admin only).
+   *
+   * @param   {string} stage – e.g. 'round_of_16', 'quarterfinal', …
+   * @returns {Promise<Object>} { updated, skipped, message, errors? }
+   */
+  async fetchNextRound(stage) {
+    return this.request('POST', '/admin/fetch-next-round', { stage });
   }
 };
 
