@@ -28,6 +28,7 @@ export async function renderAdmin() {
     { id: 'round_of_16', label: 'Achtste Finale' },
     { id: 'quarterfinal', label: 'Kwartfinale' },
     { id: 'semifinal', label: 'Halve Finale' },
+    { id: 'third_place', label: 'Troostfinale' },
     { id: 'final', label: 'Finale' },
   ];
   

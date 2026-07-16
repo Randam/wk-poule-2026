@@ -80,10 +80,24 @@ export async function renderMatches() {
     list.innerHTML = '<div class="loading-container"><div class="spinner"></div><p>Wedstrijden laden...</p></div>';
     
     try {
-      const params = { stage: currentStage };
-      if (currentGroup) params.group = currentGroup;
-      const data = await API.getMatches(params);
-      const matches = data.matches || [];
+      let matches = [];
+
+      // 'final' tab shows both the troostfinale and the finale
+      if (currentStage === 'final') {
+        const [thirdData, finalData] = await Promise.all([
+          API.getMatches({ stage: 'third_place' }),
+          API.getMatches({ stage: 'final' })
+        ]);
+        matches = [
+          ...(thirdData.matches || []),
+          ...(finalData.matches || [])
+        ];
+      } else {
+        const params = { stage: currentStage };
+        if (currentGroup) params.group = currentGroup;
+        const data = await API.getMatches(params);
+        matches = data.matches || [];
+      }
       
       if (matches.length === 0) {
         list.innerHTML = '<div class="loading-container"><p>Geen wedstrijden gevonden</p></div>';
@@ -179,10 +193,14 @@ export async function renderMatches() {
 
       // First match whose kick-off hasn't happened yet
       const nextMatch = allMatches.find(m => new Date(m.match_date) > now);
-      if (nextMatch) return nextMatch.stage;
+      if (nextMatch) {
+        // Treat third_place as 'final' so the tab matches
+        return nextMatch.stage === 'third_place' ? 'final' : nextMatch.stage;
+      }
 
       // All matches are in the past → land on the last stage that has matches
-      return allMatches[allMatches.length - 1].stage;
+      const lastStage = allMatches[allMatches.length - 1].stage;
+      return lastStage === 'third_place' ? 'final' : lastStage;
     } catch (e) {
       return 'group';
     }
